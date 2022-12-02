@@ -1,36 +1,36 @@
 fun main() {
+    fun List<String>.toGameRounds(myHandShapeMapping: (HandShape, String) -> HandShape): List<GameRound> = this.map { line ->
+        val shapeInputs = line.split(" ")
+        if (shapeInputs.size != 2) error("Each round/line needs exactly 2 hand shapes")
+
+        val opponentHandShape = HandShape.fromValue(shapeInputs[0])
+        val myHandShape = myHandShapeMapping(opponentHandShape, shapeInputs[1])
+        GameRound(opponentHandShape, myHandShape)
+    }
+
     fun part1(input: List<String>): Int {
-        val gameRounds = input.map { line ->
-            val shapesInRound = line.split(" ").map {
-                when (it) {
+        val gameRounds = input.toGameRounds { _, myShapeInput ->
+            HandShape.fromValue(
+                when(myShapeInput) {
                     "X" -> "A"
                     "Y" -> "B"
                     "Z" -> "C"
-                    else -> it
+                    else -> error("The second move must be XYZ.")
                 }
-            }.map { HandShape.fromValue(it) }
-
-            if (shapesInRound.size != 2) error("Each round/line needs exactly 2 hand shapes")
-
-            GameRound(shapesInRound[0], shapesInRound[1])
+            )
         }
 
         return gameRounds.sumOf { it.evaluate() }
     }
 
     fun part2(input: List<String>): Int {
-        val gameRounds = input.map { line ->
-            val shapeInputs = line.split(" ")
-            if (shapeInputs.size != 2) error("Each round/line needs exactly 2 hand shapes")
-
-            val opponentHandShape = HandShape.fromValue(shapeInputs[0])
-            val myHandShape = when (shapeInputs[1]) {
+        val gameRounds = input.toGameRounds { opponentHandShape, myShapeInput ->
+            when (myShapeInput) {
                 "X" -> HandShape.getLosingShape(opponentHandShape)
                 "Y" -> opponentHandShape
                 "Z" -> HandShape.getWinningShape(opponentHandShape)
                 else -> error("The second move must be XYZ.")
             }
-            GameRound(opponentHandShape, myHandShape)
         }
 
         return gameRounds.sumOf { it.evaluate() }
@@ -61,7 +61,7 @@ data class GameRound(val opponentHandShape: HandShape, val myHandShape: HandShap
             Pair(HandShape.PAPER, HandShape.SCISSORS),
             Pair(HandShape.SCISSORS, HandShape.ROCK) -> 6
 
-            else -> 0
+            else -> error("The combination of $opponentHandShape and $myHandShape is not possible.")
         }
 
         return pointsFromResult + myHandShape.points
