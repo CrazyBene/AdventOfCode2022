@@ -3,6 +3,31 @@ import java.util.*
 fun main() {
     data class Instruction(val from: Int, val to: Int, val repeat: Int = 1)
 
+    abstract class Crane {
+        abstract fun performInstruction(state: List<Stack<Char>>, instruction: Instruction)
+    }
+
+    class CrateMover9000 : Crane() {
+        override fun performInstruction(state: List<Stack<Char>>, instruction: Instruction) {
+            for (i in 0 until instruction.repeat) {
+                val crate = state[instruction.from].pop()
+                state[instruction.to].push(crate)
+            }
+        }
+    }
+
+    class CrateMover9001 : Crane() {
+        override fun performInstruction(state: List<Stack<Char>>, instruction: Instruction) {
+            val poppedCrates = mutableListOf<Char>()
+            for (i in 0 until instruction.repeat) {
+                poppedCrates += state[instruction.from].pop()
+            }
+            for (crate in poppedCrates.reversed()) {
+                state[instruction.to].push(crate)
+            }
+        }
+    }
+
     class Cargo(initialState: String) {
 
         val state: List<Stack<Char>>
@@ -33,21 +58,8 @@ fun main() {
             }
         }
 
-        fun performInstruction(instruction: Instruction) {
-            for (i in 0 until instruction.repeat) {
-                val popped = state[instruction.from - 1].pop()
-                state[instruction.to - 1].push(popped)
-            }
-        }
-
-        fun performInstruction9001(instruction: Instruction) {
-            val popped = mutableListOf<Char>()
-            for (i in 0 until instruction.repeat) {
-                popped += state[instruction.from - 1].pop()
-            }
-            for (pop in popped.reversed()) {
-                state[instruction.to - 1].push(pop)
-            }
+        fun performInstruction(crane: Crane, instruction: Instruction) {
+            crane.performInstruction(state, instruction)
         }
 
         fun getTopOfStacks(): String {
@@ -65,8 +77,8 @@ fun main() {
         result?.groupValues?.get(0) ?: error("Can not map line $$this to instruction.")
 
         val repeat = result.groupValues[1].toInt()
-        val from = result.groupValues[2].toInt()
-        val to = result.groupValues[3].toInt()
+        val from = result.groupValues[2].toInt() - 1
+        val to = result.groupValues[3].toInt() - 1
 
         return Instruction(from, to, repeat)
     }
@@ -88,8 +100,10 @@ fun main() {
     fun part1(input: String): String {
         val (state, instructions) = input.toStateAndInstructions()
 
+        val crane = CrateMover9000()
+
         instructions.forEach {
-            state.performInstruction(it)
+            state.performInstruction(crane, it)
         }
 
         return state.getTopOfStacks()
@@ -98,8 +112,10 @@ fun main() {
     fun part2(input: String): String {
         val (state, instructions) = input.toStateAndInstructions()
 
+        val crane = CrateMover9001()
+
         instructions.forEach {
-            state.performInstruction9001(it)
+            state.performInstruction(crane, it)
         }
 
         return state.getTopOfStacks()
