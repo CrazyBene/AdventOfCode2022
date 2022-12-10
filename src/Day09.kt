@@ -1,10 +1,18 @@
 import kotlin.math.abs
+import kotlin.math.sign
 
 fun main() {
-    fun List<String>.toMoveInstructions(): List<MoveInstruction> {
+    fun List<String>.toMoveInstructions(): List<Pair<Int, Int>> {
         return this.flatMap {
             val (char, times) = it.split(" ")
-            MoveInstruction.fromChar(char.first(), times.toInt())
+            val move = when (char.first()) {
+                'U' -> 0 to 1
+                'R' -> 1 to 0
+                'D' -> 0 to -1
+                'L' -> -1 to 0
+                else -> error("Can not convert ${char.first()} to move direction.")
+            }
+            List(times.toInt()) { move }
         }
     }
 
@@ -12,38 +20,18 @@ fun main() {
         return abs(this.first - otherPosition.first) <= 1 && abs(this.second - otherPosition.second) <= 1
     }
 
-    fun getFollowMoveInstruction(headPosition: Pair<Int, Int>, tailPosition: Pair<Int, Int>): MoveInstruction {
+    fun getFollowMoveInstruction(headPosition: Pair<Int, Int>, tailPosition: Pair<Int, Int>): Pair<Int, Int> {
         if (headPosition.isTouching(tailPosition))
-            return MoveInstruction.NONE
+            return 0 to 0
 
         val distanceX = headPosition.first - tailPosition.first
         val distanceY = headPosition.second - tailPosition.second
 
-        return when (distanceX to distanceY) {
-            0 to 2 -> MoveInstruction.UP
-            0 to -2 -> MoveInstruction.DOWN
-            -2 to 0 -> MoveInstruction.LEFT
-            2 to 0 -> MoveInstruction.RIGHT
-            else -> {
-                if (distanceX > 0 && distanceY > 0) {
-                    return MoveInstruction.UP_RIGHT
-                }
-                if (distanceX > 0 && distanceY < 0) {
-                    return MoveInstruction.DOWN_RIGHT
-                }
-                if (distanceX < 0 && distanceY < 0) {
-                    return MoveInstruction.DOWN_LEFT
-                }
-                if (distanceX < 0 && distanceY > 0) {
-                    return MoveInstruction.UP_LEFT
-                }
-                error("Tail $tailPosition can not follow head $headPosition.")
-            }
-        }
+        return distanceX.sign to distanceY.sign
     }
 
-    operator fun Pair<Int, Int>.plus(moveInstruction: MoveInstruction): Pair<Int, Int> {
-        return this.first + moveInstruction.direction.first to this.second + moveInstruction.direction.second
+    operator fun Pair<Int, Int>.plus(moveInstruction: Pair<Int, Int>): Pair<Int, Int> {
+        return this.first + moveInstruction.first to this.second + moveInstruction.second
     }
 
     fun part1(input: List<String>): Int {
@@ -68,14 +56,13 @@ fun main() {
         val moveInstructions = input.toMoveInstructions()
 
         val numberOfRopeSegments = 10
-
-        val ropeSegmentsPositions = MutableList(numberOfRopeSegments) { 0 to 0 }
+        val ropeSegmentsPositions = Array(numberOfRopeSegments) { 0 to 0 }
 
         val positionsVisitedByTail = mutableSetOf<Pair<Int, Int>>()
         positionsVisitedByTail.add(ropeSegmentsPositions.last())
 
         moveInstructions.forEach {
-            for (i in 0 until ropeSegmentsPositions.size) {
+            for (i in ropeSegmentsPositions.indices) {
                 if (i == 0)
                     ropeSegmentsPositions[0] = ropeSegmentsPositions[0] + it
                 else
@@ -84,7 +71,6 @@ fun main() {
                         ropeSegmentsPositions[i]
                     )
             }
-
             positionsVisitedByTail.add(ropeSegmentsPositions.last())
         }
 
@@ -98,37 +84,4 @@ fun main() {
     val input = readInput("Day09")
     println("Question 1 - Answer: ${part1(input)}")
     println("Question 2 - Answer: ${part2(input)}")
-}
-
-enum class MoveInstruction(val direction: Pair<Int, Int>) {
-
-    UP(0 to 1),
-    UP_RIGHT(1 to 1),
-    RIGHT(1 to 0),
-    DOWN_RIGHT(1 to -1),
-    DOWN(0 to -1),
-    DOWN_LEFT(-1 to -1),
-    LEFT(-1 to 0),
-    UP_LEFT(-1 to 1),
-    NONE(0 to 0);
-
-    companion object {
-
-        fun fromChar(char: Char): MoveInstruction {
-            return when (char) {
-                'U' -> UP
-                'D' -> DOWN
-                'L' -> LEFT
-                'R' -> RIGHT
-                else -> error("Can not convert $char to MoveInstruction.")
-            }
-        }
-
-        fun fromChar(char: Char, times: Int): List<MoveInstruction> {
-            val moveInstruction = fromChar(char)
-            return List(times) { moveInstruction }
-        }
-
-    }
-
 }
