@@ -47,29 +47,28 @@ fun main() {
         return hill
     }
 
-    fun solveWithDijkstra(nodes: List<Node>, startNode: Node): Pair<Map<Node, Int>, Map<Node, Node?>> {
+    fun solveWithDijkstra(nodes: List<Node>, startNodes: List<Node>): Pair<Map<Node, Int>, Map<Node, Node?>> {
         val distances = nodes.associateWith { Int.MAX_VALUE }.toMutableMap()
         val previous: MutableMap<Node, Node?> = nodes.associateWith { null }.toMutableMap()
 
         val notYetVisited = mutableListOf<Node>()
         notYetVisited.addAll(nodes)
 
-        distances[startNode] = 0
+        startNodes.forEach {
+            distances[it] = 0
+        }
 
         while (notYetVisited.isNotEmpty()) {
             val currentNode = notYetVisited.sortedBy { distances[it] }.first()
             notYetVisited.remove(currentNode)
 
-            if(currentNode.isEnd)
-                return distances to previous
-
             for (neighbor in currentNode.neighbours) {
-                if(neighbor !in notYetVisited)
+                if (neighbor !in notYetVisited)
                     continue
 
                 val newDistance = distances[currentNode]!!.plus(1)
 
-                if(newDistance < distances[neighbor]!!) {
+                if (newDistance < distances[neighbor]!!) {
                     distances[neighbor] = newDistance
                     previous[neighbor] = currentNode
                 }
@@ -78,6 +77,18 @@ fun main() {
         }
 
         return distances to previous
+    }
+
+    fun evaluateSteps(previousGraph: Map<Node, Node?>, from: Node, until: (Node) -> Boolean): Int {
+        var steps = 0
+        var checkNode: Node? = from
+        while (checkNode != null) {
+            if (until(checkNode))
+                break
+            steps++
+            checkNode = previousGraph[checkNode]
+        }
+        return steps
     }
 
     fun part1(input: List<String>): Int {
@@ -89,16 +100,18 @@ fun main() {
             it.isEnd
         }
 
-        val (_, previous) = solveWithDijkstra(nodes, startNode)
+        val (_, previousGraph) = solveWithDijkstra(nodes, listOf(startNode))
 
-        var steps = -1
+        var steps = 0
         var checkNode: Node? = endNode
-        while(checkNode != null) {
+        while (checkNode != null) {
             steps++
-            checkNode = previous[checkNode]
+            checkNode = previousGraph[checkNode]
         }
 
-        return steps
+        return evaluateSteps(previousGraph, endNode) {
+            it == startNode
+        }
     }
 
     fun part2(input: List<String>): Int {
@@ -110,18 +123,11 @@ fun main() {
             it.isEnd
         }
 
-        return possibleStartNodes.map {
-            val (_, previous) = solveWithDijkstra(nodes, it)
+        val (_, previousGraph) = solveWithDijkstra(nodes, possibleStartNodes)
 
-            var steps = -1
-            var checkNode: Node? = endNode
-            while(checkNode != null) {
-                steps++
-                checkNode = previous[checkNode]
-            }
-
-            steps
-        }.min()
+        return evaluateSteps(previousGraph, endNode) {
+            it in possibleStartNodes
+        }
     }
 
     val testInput = readInput("Day12Test")
