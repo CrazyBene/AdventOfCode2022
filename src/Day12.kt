@@ -79,16 +79,16 @@ fun main() {
         return distances to previous
     }
 
-    fun evaluateSteps(previousGraph: Map<Node, Node?>, from: Node, until: (Node) -> Boolean): Int {
+    fun evaluateSteps(previousGraph: Map<Node, Node?>, from: Node, until: List<Node>): Int {
         var steps = 0
         var checkNode: Node? = from
         while (checkNode != null) {
-            if (until(checkNode))
-                break
+            if (checkNode in until)
+                return steps
             steps++
             checkNode = previousGraph[checkNode]
         }
-        return steps
+        error("Could not find a way to the until(s).")
     }
 
     fun part1(input: List<String>): Int {
@@ -109,9 +109,7 @@ fun main() {
             checkNode = previousGraph[checkNode]
         }
 
-        return evaluateSteps(previousGraph, endNode) {
-            it == startNode
-        }
+        return evaluateSteps(previousGraph, endNode, listOf(startNode))
     }
 
     fun part2(input: List<String>): Int {
@@ -125,9 +123,7 @@ fun main() {
 
         val (_, previousGraph) = solveWithDijkstra(nodes, possibleStartNodes)
 
-        return evaluateSteps(previousGraph, endNode) {
-            it in possibleStartNodes
-        }
+        return evaluateSteps(previousGraph, endNode, possibleStartNodes)
     }
 
     val testInput = readInput("Day12Test")
