@@ -56,6 +56,36 @@ fun main() {
         return currentPosition
     }
 
+    fun findFinalPosition(
+        currentPosition: Pair<Int, Int>,
+        rocks: Set<Pair<Int, Int>>,
+        restingSand: Set<Pair<Int, Int>>,
+        ground: Int = Int.MAX_VALUE
+    ): Pair<Int, Int> {
+        val obstacles = mutableSetOf<Pair<Int, Int>>()
+        obstacles.addAll(rocks)
+        obstacles.addAll(restingSand)
+
+        var finalPosition: Pair<Int, Int>
+        var newPosition = currentPosition
+        do {
+            finalPosition = newPosition
+
+            if (finalPosition.second + 1 == ground)
+                break
+
+            if (finalPosition.first to finalPosition.second + 1 !in obstacles)
+                newPosition = finalPosition.first to finalPosition.second + 1
+            else if (finalPosition.first - 1 to finalPosition.second + 1 !in obstacles)
+                newPosition = finalPosition.first - 1 to finalPosition.second + 1
+            else if (finalPosition.first + 1 to finalPosition.second + 1 !in obstacles)
+                newPosition = finalPosition.first + 1 to finalPosition.second + 1
+
+        } while (newPosition != finalPosition)
+
+        return finalPosition
+    }
+
     fun printCave(
         xRange: IntRange,
         yRange: IntRange,
@@ -87,25 +117,13 @@ fun main() {
 
         val restingSand = mutableSetOf<Pair<Int, Int>>()
 
-        var sandRunning = true
-        while (sandRunning) {
-            var fallingSand = 500 to 0
-            var newPosition = fallingSand
+        while (true) {
+            val newSandBlock = findFinalPosition(500 to 0, rocks, restingSand, lowestRock + 2)
 
-            do {
-                fallingSand = newPosition
-
-                if (fallingSand.second > lowestRock) {
-                    sandRunning = false
-                    break
-                }
-
-                newPosition = findNewPosition(fallingSand, rocks, restingSand)
-            } while (fallingSand != newPosition)
-
-            if (sandRunning) {
-                restingSand += fallingSand
+            if (newSandBlock.second > lowestRock) {
+                break
             }
+            restingSand += newSandBlock
         }
 
 //        printCave(494 until 504, 0 until 10, rocks, restingSand)
@@ -122,26 +140,16 @@ fun main() {
 
         val restingSand = mutableSetOf<Pair<Int, Int>>()
 
-        for (i in 0 until 100000) {
-            var fallingSand = 500 to 0
-            var newPosition = fallingSand
+        while (true) {
+            val newSandBlock = findFinalPosition(500 to 0, rocks, restingSand, ground)
 
-            do {
-                fallingSand = newPosition
-
-                newPosition = findNewPosition(fallingSand, rocks, restingSand, ground)
-            } while (fallingSand != newPosition)
-
-            restingSand += fallingSand
-            if (fallingSand == 500 to 0) {
+            restingSand += newSandBlock
+            if (newSandBlock == 500 to 0) {
                 break
             }
-
-//            if (i % 1000 == 0) {
-//                println(i)
-//                printCave(500 - ground .. 500 + ground, 0 .. ground, rocks, restingSand, ground)
-//            }
         }
+
+//        printCave(500 - ground .. 500 + ground, 0 .. ground, rocks, restingSand, ground)
 
         return restingSand.count()
     }
