@@ -75,63 +75,32 @@ fun main() {
             Sensor(Position(sensorXPos, sensorYPos), Position(beaconXPos, beaconYPos))
         }
 
-//        val notPossible = sensors.flatMapIndexed { i, it ->
-//            println(i)
-//            val distanceToBeacon = it.position.distanceTo(it.beaconPosition)
-//
-//            val list = mutableListOf<Position>()
-//            for(y in it.position.yPos - distanceToBeacon .. it.position.yPos + distanceToBeacon) {
-//                for(x in it.position.xPos - distanceToBeacon .. it.position.xPos + distanceToBeacon) {
-//                    val positionToChecked = Position(x, y)
-//
-//                    val d = positionToChecked.distanceTo(it.position)
-//
-//                    if(d <= distanceToBeacon) {
-//                        list.add(positionToChecked)
-//                    }
-//                }
-//            }
-//            list
-//        }
-//
-//        println(notPossible)
+        (0..maxCheckSize).forEach { y ->
+            val ranges = sensors.mapNotNull { sensor ->
+                val beaconDistance = sensor.position.distanceTo(sensor.beaconPosition)
+                val begin = sensor.position.xPos + (beaconDistance - abs(y - sensor.position.yPos)).unaryMinus()
+                val end = sensor.position.xPos + beaconDistance - abs(y - sensor.position.yPos)
+                (begin..end).takeUnless { it.isEmpty() }
+            }.sortedBy { it.first() }
 
-
-        val freePositions = mutableListOf<Position>()
-        var done = 0
-
-        List(maxCheckSize) {it}.parallelStream().forEach {y ->
-            for (x in 0..maxCheckSize) {
-                val positionToCheck = Position(x, y)
-
-                var closer = false
-                for (sensor in sensors) {
-                    val beaconDistance = sensor.position.distanceTo(sensor.beaconPosition)
-                    val distanceToSensor = positionToCheck.distanceTo(sensor.position)
-
-                    if (distanceToSensor <= beaconDistance) {
-                        closer = true
-                        break
-                    }
-                }
-
-                if (!closer) {
-                    freePositions += positionToCheck
-                    break
-                }
-            }
-            done++
-            println(done / maxCheckSize.toFloat() * 100)
+            ranges.reduce { acc, range -> (acc union range) ?: return (acc.last + 1) * 4_000_000L + y }
         }
 
-        return freePositions.first().xPos * 4_000_000L + freePositions.first().yPos
+        error("Error")
     }
 
     val testInput = readInput("Day15Test")
     check(part1(testInput, 10) == 26)
-//    check(part2(testInput, 20) == 56000011L)
+    check(part2(testInput, 20) == 56000011L)
 
     val input = readInput("Day15")
     println("Question 1 - Answer: ${part1(input, 2000000)}")
     println("Question 2 - Answer: ${part2(input, 4_000_000)}")
+}
+
+private infix fun IntRange.union(other: IntRange): IntRange? {
+    return when (this.first <= other.last && this.last >= other.first) {
+        true -> IntRange(minOf(first, other.first), maxOf(last, other.last))
+        false -> null
+    }
 }
